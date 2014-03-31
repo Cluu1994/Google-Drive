@@ -3,12 +3,12 @@ $:.push File.expand_path("../lib", __FILE__)
 
 Gem::Specification.new do |s|
   s.name        = "gdrive"
-  s.version     = "0.0.1"
+  s.version     = "0.0.6"
   # s.platform    = Gem::Platform::RUBY
   s.authors     = ["ALDO Digital Lab"]
   # s.email       = ["email@example.com"]
   # s.homepage    = "http://example.com"
-  s.summary     = %q{GoogleDrive for Aldo}
+  s.summary     = %q{Google Drive for Aldo Group}
   # s.description = %q{A longer description of your extension}
 
   s.files         = `git ls-files`.split("\n")
