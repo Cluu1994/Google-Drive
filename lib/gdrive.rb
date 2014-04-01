@@ -167,43 +167,43 @@ class GDriver < ::Middleman::Extension
         result = session.collection_by_title(banner).subcollection_by_title(season).subcollection_by_title(campaign).file_by_title(locale).worksheet_by_title(page).list.to_hash_array.to_yaml
         ::File.open(cache_file,"w"){ |f| f << result }
       end
-      page_data_request = ::File.read(cache_file)
+      page_data_request = YAML.load(::File.read(cache_file))
       return page_data_request
     end
 
     def getItemByPosition(grid_position, page_data_request)
-      item_by_position = YAML.load(page_data_request).find {|k| k['grid_position'] == grid_position}
+      item_by_position = page_data_request.find {|k| k['grid_position'] == grid_position}
       item_by_position ? item_by_position : '<span>no item found!</span>'
     end
 
     def getItemByPositionAndType(grid_position, page_type, page_data_request)
-      item_by_position = YAML.load(page_data_request).find {|k| k['grid_position'] == grid_position && k['type'] == page_type }
+      item_by_position = page_data_request.find {|k| k['grid_position'] == grid_position && k['type'] == page_type }
       item_by_position ? item_by_position : '<span>no item found!</span>'
     end
 
 
     def getItemByType(type, page_data_request)
-      item_by_position = YAML.load(page_data_request).find {|k| k['type'] == type}
+      item_by_position = page_data_request.find {|k| k['type'] == type}
       item_by_position ? item_by_position : '<span>no item found!</span>'
     end
 
     def getItemByPage(page, page_data_request)
-      item_by_position = YAML.load(page_data_request).find {|k| k['page'] == page}
+      item_by_position = page_data_request.find {|k| k['page'] == page}
       item_by_position ? item_by_position : '<span>no item found!</span>'
     end
 
     def getAllItemsByPosition(grid_position, page_data_request)
-      item_by_position = YAML.load(page_data_request).find_all {|k| k['grid_position'] == grid_position}
+      item_by_position = page_data_request.find_all {|k| k['grid_position'] == grid_position}
       item_by_position ? item_by_position : '<span>no item found!</span>'
     end
 
     def getAllItemsByType(type, page_data_request)
-      item_by_position = YAML.load(page_data_request).find_all {|k| k['type'] == type}
+      item_by_position = page_data_request.find_all {|k| k['type'] == type}
       item_by_position ? item_by_position : '<span>no item found!</span>'
     end
 
     def getAllItemsByPage(page, page_data_request)
-      item_by_position = YAML.load(page_data_request).find_all {|k| k['page'] == page}
+      item_by_position = page_data_request.find_all {|k| k['page'] == page}
       item_by_position ? item_by_position : '<span>no item found!</span>'
     end
 
