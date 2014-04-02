@@ -212,7 +212,10 @@ class GDriver < ::Middleman::Extension
     end
 
     def getData(data_type, data_name, page_data)
-      return page_data.find_all {|k| k["#{data_type}"].match /#{data_name}/}
+      request = page_data.find_all {|k| k["#{data_type}"].match /#{data_name}/}
+      if request.count == 1
+        return request[0]
+      end
     end
 
     def getAllData(data_type, data_name, page_data)
