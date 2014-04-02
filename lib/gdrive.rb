@@ -210,6 +210,14 @@ class GDriver < ::Middleman::Extension
     def getCell(grid_position, column_name, page_data_request)
       getItemByPosition(grid_position, page_data_request)[column_name]
     end
+
+    def getData(data_type, data_name, page_data)
+      return page_data.find {|k| k["#{data_type}"].match /#{data_name}/}
+    end
+
+    def getAllData(data_type, data_name, page_data)
+      return page_data.find_all {|k| k["#{data_type}"].match /#{data_name}(.*)/}
+    end
   end
 end
 GDriver.register(:gdrive)

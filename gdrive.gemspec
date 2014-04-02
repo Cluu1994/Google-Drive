@@ -3,7 +3,7 @@ $:.push File.expand_path("../lib", __FILE__)
 
 Gem::Specification.new do |s|
   s.name        = "gdrive"
-  s.version     = "0.0.65"
+  s.version     = "0.0.7"
   # s.platform    = Gem::Platform::RUBY
   s.authors     = ["ALDO Digital Lab"]
   # s.email       = ["email@example.com"]
