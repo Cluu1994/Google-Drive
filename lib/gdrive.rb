@@ -208,7 +208,7 @@ class GDriver < ::Middleman::Extension
     end
 
     def getCell(grid_position, column_name, page_data_request)
-      getItemByPosition(grid_position, page_data_request.to_json)[column_name]
+      getItemByPosition(grid_position, page_data_request)[column_name]
     end
   end
 end
