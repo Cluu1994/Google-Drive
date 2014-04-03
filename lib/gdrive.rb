@@ -1,15 +1,21 @@
 # Author: Hiroshi Ichikawa <http://gimite.net/>
 # The license of this source is "New BSD Licence"
-require 'middleman-core'
-require 'thor'
+require 'middleman'
+require 'fileutils'
+require 'rack'
 
 class GDriver < ::Middleman::Extension
+  include Middleman::CoreExtensions
 
   def initialize(app, options_hash={}, &block)
     # Call super to build options from the options_hash
     super
     require "gdrive/session"
-
+    require 'rack'
+    require 'rack/request'
+    unless File.directory?('data/cache')
+      FileUtils.mkdir 'data/cache'
+    end
   end
 
   def after_configuration
@@ -160,15 +166,23 @@ class GDriver < ::Middleman::Extension
     end
 
     def gdrive(locale, page)
-      # empty_directory("data/cache")
-      cache_file = ::File.join("data/cache", "#{locale}_#{page}.yml")
-      time = Time.now
-      if !::File.exist?(cache_file) || ::File.mtime(cache_file) < (time - cache_duration)
+      if req.params["nocache"] || req.GET.include?("nocache")
+        puts "Viewing page without cache".red
+        return page_data_request = YAML.load(session.collection_by_title(banner).subcollection_by_title(season).subcollection_by_title(campaign).file_by_title(locale).worksheet_by_title(page).list.to_hash_array.to_yaml)
+      elsif req.GET.include?("newcache")
+        cache_file = ::File.join("data/cache", "#{locale}_#{page}.yml")
         result = session.collection_by_title(banner).subcollection_by_title(season).subcollection_by_title(campaign).file_by_title(locale).worksheet_by_title(page).list.to_hash_array.to_yaml
         ::File.open(cache_file,"w"){ |f| f << result }
+        return page_data_request = YAML.load(::File.read(cache_file))
+      else
+        cache_file = ::File.join("data/cache", "#{locale}_#{page}.yml")
+        time = Time.now
+        if !::File.exist?(cache_file) || ::File.mtime(cache_file) < (time - cache_duration)
+          result = session.collection_by_title(banner).subcollection_by_title(season).subcollection_by_title(campaign).file_by_title(locale).worksheet_by_title(page).list.to_hash_array.to_yaml
+          ::File.open(cache_file,"w"){ |f| f << result }
+        end
+        return page_data_request = YAML.load(::File.read(cache_file))
       end
-      page_data_request = YAML.load(::File.read(cache_file))
-      return page_data_request
     end
 
     def getItemByPosition(grid_position, page_data_request)
@@ -213,8 +227,10 @@ class GDriver < ::Middleman::Extension
 
     def getData(data_type, data_name, page_data)
       request = page_data.find_all {|k| k["#{data_type}"].match /#{data_name}/}
-      if request.count == 1
-        return page_data.find {|k| k["#{data_type}"].match /#{data_name}/}
+      if request.length == 1
+        return request[0]
+      else
+        return request ? request : "Error: No Data Found"
       end
     end
 
