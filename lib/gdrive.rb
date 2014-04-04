@@ -3,6 +3,7 @@
 require 'middleman'
 require 'fileutils'
 require 'rack'
+require 'uri'
 
 class GDriver < ::Middleman::Extension
   include Middleman::CoreExtensions
@@ -13,6 +14,7 @@ class GDriver < ::Middleman::Extension
     require "gdrive/session"
     require 'rack'
     require 'rack/request'
+    require 'uri'
     unless File.directory?('data/cache')
       FileUtils.mkdir 'data/cache'
     end
@@ -166,22 +168,22 @@ class GDriver < ::Middleman::Extension
     end
 
     def gdrive(locale, page)
-      if req.params["nocache"] || req.GET.include?("nocache")
-        puts "Viewing page without cache".red
-        return page_data_request = YAML.load(session.collection_by_title(banner).subcollection_by_title(season).subcollection_by_title(campaign).file_by_title(locale).worksheet_by_title(page).list.to_hash_array.to_yaml)
-      elsif req.GET.include?("newcache")
-        cache_file = ::File.join("data/cache", "#{locale}_#{page}.yml")
-        result = session.collection_by_title(banner).subcollection_by_title(season).subcollection_by_title(campaign).file_by_title(locale).worksheet_by_title(page).list.to_hash_array.to_yaml
-        ::File.open(cache_file,"w"){ |f| f << result }
+      cache_file = ::File.join("data/cache", "#{locale}_#{page}.yml")
+      time = Time.now
+      if offline
+        puts "== You are currently viewing #{page} using the offline mode".green
         return page_data_request = YAML.load(::File.read(cache_file))
+      end
+      if req.params["nocache"] || req.GET.include?("nocache")
+        puts "== You are viewing #{page} directly from google drive".red
+        return page_data_request = YAML.load(session.collection_by_title(banner).subcollection_by_title(season).subcollection_by_title(campaign).file_by_title(locale).worksheet_by_title(page).list.to_hash_array.to_yaml)
       else
-        cache_file = ::File.join("data/cache", "#{locale}_#{page}.yml")
-        time = Time.now
         if !::File.exist?(cache_file) || ::File.mtime(cache_file) < (time - cache_duration)
           result = session.collection_by_title(banner).subcollection_by_title(season).subcollection_by_title(campaign).file_by_title(locale).worksheet_by_title(page).list.to_hash_array.to_yaml
           ::File.open(cache_file,"w"){ |f| f << result }
         end
-        return page_data_request = YAML.load(::File.read(cache_file))
+        page_data_request = YAML.load(::File.read(cache_file))
+        return page_data_request
       end
     end
 
