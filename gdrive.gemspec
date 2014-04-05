@@ -1,10 +1,11 @@
 # -*- encoding: utf-8 -*-
 $:.push File.expand_path("../lib", __FILE__)
+require "gdrive/version"
 
 Gem::Specification.new do |s|
   s.name        = "gdrive"
-  s.version     = "0.0.7a"
-  # s.platform    = Gem::Platform::RUBY
+  s.version     = Middleman::GDrive::VERSION
+  s.platform    = Gem::Platform::RUBY
   s.authors     = ["ALDO Digital Lab"]
   # s.email       = ["email@example.com"]
   # s.homepage    = "http://example.com"
@@ -21,6 +22,6 @@ Gem::Specification.new do |s|
 
   # Additional dependencies
   s.add_runtime_dependency("oauth2", [">= 0.5.0"])
-  s.add_runtime_dependency("google_drive", [">= 0.3.7"])
+  s.add_runtime_dependency("google_drive", [">= 0.3.8"])
   # s.add_runtime_dependency("gem-name", "gem-version")
 end
