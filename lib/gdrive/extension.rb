@@ -17,7 +17,7 @@ module Middleman
       app.logger.info '== Google Drive Loaded'
     
 
-    helpers do
+    app.helpers do
       def session
         # Create Google Authentication Session with Access Token
         settings = YAML.load(File.open('data/credentials.yml'))
