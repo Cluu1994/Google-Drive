@@ -15,7 +15,7 @@ module Middleman
 
     def after_configuration
       app.logger.info '== Google Drive Loaded'
-    end
+    
 
     helpers do
       def session
@@ -104,6 +104,7 @@ module Middleman
       def getAllData(data_type, data_name, page_data)
         return page_data.find_all { |k| k["#{data_type}"].match /#{data_name}(.*)/ }
       end
+    end
     end
   end
 end
