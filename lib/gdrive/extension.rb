@@ -1,4 +1,5 @@
 require 'fileutils'
+require 'rack'
 
 module Middleman
   class GDriveExtension < ::Middleman::Extension
@@ -7,7 +8,6 @@ module Middleman
     def initialize(app, options_hash={}, &block)
       # Call super to build options from the options_hash
       super
-      # require 'google_drive/session'
       unless File.directory?('data/cache')
         FileUtils.mkdir 'data/cache'
       end
@@ -15,7 +15,7 @@ module Middleman
 
     def after_configuration
       app.logger.info '== Google Drive Loaded'
-    
+
 
     app.helpers do
       def session
