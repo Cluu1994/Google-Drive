@@ -42,7 +42,7 @@ module Middleman
           puts "== You are currently viewing #{page} using the offline mode".green
           return page_data_request = YAML.load(::File.read(cache_file))
         end
-        if !req.nil? && req.params['nocache'] || req.GET.include?('nocache')
+        if !req.nil? && req.params['nocache'] || !req.nil? && req.GET.include?('nocache')
           puts "== You are viewing #{page} directly from google drive".red
           return page_data_request = YAML.load(session.file_by_title(locale).worksheet_by_title(page).list.to_hash_array.to_yaml)
         else
