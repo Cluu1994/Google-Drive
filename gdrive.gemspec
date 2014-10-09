@@ -21,7 +21,8 @@ Gem::Specification.new do |s|
   s.add_runtime_dependency("middleman-core", [">= 3.2.2"])
 
   # Additional dependencies
-  s.add_runtime_dependency("oauth2", [">= 0.5.0"])
-  s.add_runtime_dependency("google_drive", [">= 0.3.8"])
+  s.add_runtime_dependency("oauth2", [">= 1.0.0"])
+  s.add_runtime_dependency("google_drive", [">= 0.3.10"])
+  s.add_runtime_dependency("oj", [">= 2.10.3"])
   # s.add_runtime_dependency("gem-name", "gem-version")
 end

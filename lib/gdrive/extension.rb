@@ -1,5 +1,5 @@
 require 'fileutils'
-
+require 'oj'
 module Middleman
   class GDriveExtension < ::Middleman::Extension
     #include Middleman::CoreExtensions
@@ -36,21 +36,26 @@ module Middleman
       def gdrive(locale, page)
         locale = locale.lstrip.rstrip
         page = page.lstrip.rstrip
-        cache_file = ::File.join('data/cache', "#{locale}_#{page}.yml")
+        cache_file = ::File.join('data/cache', "#{locale}_#{page}.json")
         time = Time.now
         if offline
           puts "== You are currently viewing #{page} using the offline mode".green
-          return page_data_request = YAML.load(::File.read(cache_file))
+          return page_data_request = Oj.load(::File.read(cache_file))
         end
         if !req.nil? && req.params['nocache'] || !req.nil? && req.GET.include?('nocache')
           puts "== You are viewing #{page} directly from google drive".red
-          return page_data_request = YAML.load(session.file_by_title(locale).worksheet_by_title(page).list.to_hash_array.to_yaml)
+          return page_data_request = Oj.load(session.file_by_title(locale).worksheet_by_title(page).list.to_hash_array.to_json)
+        elsif !req.nil? && req.params['refresh'] || !req.nil? && req.GET.include?('refresh')
+          puts "== Refreshing cache file for #{page}".green
+          result = session.file_by_title(locale).worksheet_by_title(page).list.to_hash_array.to_json
+          ::File.open(cache_file, 'w')  { |f| f << result }
+          return page_data_request = Oj.load(::File.read(cache_file))
         else
           if !::File.exist?(cache_file) || ::File.mtime(cache_file) < (time - cache_duration)
-            result = session.file_by_title(locale).worksheet_by_title(page).list.to_hash_array.to_yaml
+            result = session.file_by_title(locale).worksheet_by_title(page).list.to_hash_array.to_json
             ::File.open(cache_file, 'w')  { |f| f << result }
           end
-          return page_data_request = YAML.load(::File.read(cache_file))
+          return page_data_request = Oj.load(::File.read(cache_file))
         end
       end
       def getItemByPosition(grid_position, page_data_request)
