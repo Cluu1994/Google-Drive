@@ -6,6 +6,7 @@ source 'http://rubygems.org'
 gemspec
 
 group :development do
+  gem 'google_drive', :git => 'https://github.com/gimite/google-drive-ruby.git', :branch => 'drive_api'
   gem 'rake'
   gem 'rdoc'
   gem 'yard'

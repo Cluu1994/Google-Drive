@@ -15,6 +15,7 @@ Gem::Specification.new do |s|
   s.files         = `git ls-files`.split("\n")
   s.test_files    = `git ls-files -- {test,spec,features}/*`.split("\n")
   s.executables   = `git ls-files -- bin/*`.split("\n").map{ |f| File.basename(f) }
+  s.require_paths = ["lib/google-drive-ruby/lib"]
   s.require_paths = ["lib"]
 
   # The version of middleman-core your extension depends on
@@ -22,7 +23,8 @@ Gem::Specification.new do |s|
 
   # Additional dependencies
   s.add_runtime_dependency("oauth2", [">= 1.0.0"])
-  s.add_runtime_dependency("google_drive", [">= 0.3.10"])
+  # s.add_runtime_dependency("google_drive", [">= 0.3.10"])
+  s.add_runtime_dependency('multi_json', [">= 1.10.1"])
   s.add_runtime_dependency("oj", [">= 2.10.3"])
-  # s.add_runtime_dependency("gem-name", "gem-version")
+  s.add_runtime_dependency("roo", ">= 1.13.2")
 end
