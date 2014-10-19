@@ -5,7 +5,6 @@ require 'drive'
 module Middleman
   class GDriveExtension < ::Middleman::Extension
     option :load_sheets, {}, 'Hash of google spreadsheets to load. Hash value is the id or slug of the entry to load, hash key is the data attribute to load the sheet data into.'
-    #include Middleman::CoreExtensions
 
     def initialize(klass, options_hash = {}, &block)
       # Call super to build options from the options_hash
@@ -13,6 +12,7 @@ module Middleman
       # require 'google_drive/session'
       drive = ::Drive.new
       app = klass.inst # where would you store the app instance?
+      app.logger.info '== Google Drive Loaded'
       options.load_sheets.each do |k, v|
         app.data.store(k, drive.get_sheet(app.config.banner, app.config.season, app.config.campaign, v))
       end
@@ -21,17 +21,17 @@ module Middleman
     end
 
     def after_configuration
-      app.logger.info '== Google Drive Loaded'
-
-
-
       app.helpers do
 
-        def gdrive(locale, page)
+        def refresh(locale, opt={})
+          drive = ::Drive.new
+          cache_file = ::File.join('data/cache', "#{locale}.json")
+          drive.get_sheet(config.banner, config.season, config.campaign, locale)
+          refreshed_json = Oj.object_load(::File.read(cache_file))
+          return refreshed_json
+        end
 
-          # session = $gdauth.file_by_title([banner, season, campaign, locale])
-          # locale = locale.lstrip.rstrip
-          # page = page.lstrip.rstrip
+        def gdrive(locale, page)
           drive = ::Drive.new
           cache_file = ::File.join('data/cache', "#{locale}.json")
           time = Time.now
@@ -40,31 +40,20 @@ module Middleman
             json = Oj.object_load(::File.read(cache_file))
             return page_data_request = json[page]
           end
-          # if !req.nil? && req.params['nocache'] || !req.nil? && req.GET.include?('nocache')
-          #   puts "== You are viewing #{page} directly from google drive".red
-          #   return page_data_request = Oj.load(session.worksheet_by_title(page).list.to_hash_array.to_json)
           if !req.nil? && req.params['refresh'] || !req.nil? && req.GET.include?('refresh')
-            puts "== Refreshing cache file for #{page}".green
-            # result = session.worksheet_by_title(page).list.to_hash_array.to_json
-            # ::File.open(cache_file, 'w')  { |f| f << result }
-            drive.get_sheet(config.banner, config.season, config.campaign, locale)
-            json = Oj.object_load(::File.read(cache_file))
+            json = refresh(locale)
             return page_data_request = json[page]
-            # return page_data_request = data.cache[locale][page]
-            # return page_data_request = Oj.load(::File.read(cache_file))
           else
             if !::File.exist?(cache_file) || ::File.mtime(cache_file) < (time - cache_duration)
-              # binding.pry
-              # result = session.worksheet_by_title(page).list.to_hash_array.to_json
-              # ::File.open(cache_file, 'w')  { |f| f << result }
-              drive.get_sheet(config.banner, config.season, config.campaign, locale)
+              json = refresh(locale)
+              return page_data_request = json[page]
+            else
+              json = Oj.object_load(::File.read(cache_file))
+              return page_data_request = json[page]
             end
-            json = Oj.object_load(::File.read(cache_file))
-            return page_data_request = json[page]
-            # return page_data_request = data.cache[locale][page]
-            # return page_data_request = Oj.load(::File.read(cache_file))
           end
         end
+
         def getItemByPosition(grid_position, page_data_request)
           item_by_position = page_data_request.find { |k| k['grid_position'] == grid_position }
           item_by_position ? item_by_position : '<span>no item found!</span>'
