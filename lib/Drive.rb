@@ -44,20 +44,12 @@ class Drive
   def stringify_array_values(object)
     object.each do |hash, value|
       hash.each do |k, v|
-        # binding.pry
         if numeric?(hash[k])
             hash[k] = trim(v).to_s
         else
           hash[k] = v.to_s
         end
       end
-        # if v.is_numeric?
-        #   binding.pry
-
-        # else
-
-        # end
-      # end
     end
   end
 
@@ -73,28 +65,32 @@ class Drive
     @progressbar.start
     time = Benchmark.realtime do
       @tmp_filepath = File.join('tmp/', file + '.xlsx')
-      # require 'pry'
-      # binding.pry
-      @modified_date = @drive.file_by_title(
-        [banner, season, campaign, file]
-      ).modified_date.to_s
+
       if File.exist?(cache_file)
         json = Oj.object_load(::File.read(cache_file))
+        @sheet_key = json['key']
+        @modified_date = @drive.file_by_id(@sheet_key).modified_date.to_s
         @json_date = json['modified_date']
-        puts "== You already have the latest revision of #{file}".green
-        return json if @json_date == @modified_date
+        if @json_date == @modified_date
+          puts "== You already have the latest revision of #{file}".green
+          return json
+        else
+          @drive.file_by_id(@sheet_key).export_as_file(@tmp_filepath)
+        end
+      else
+        @sheet_key = @drive.file_by_title([banner, season, campaign, file]).key
+        @modified_date = @drive.file_by_id(@sheet_key).modified_date.to_s
+        @drive.file_by_id(@sheet_key).export_as_file(@tmp_filepath)
       end
-      @drive.file_by_title(
-        [banner, season, campaign, file]
-      ).export_as_file(@tmp_filepath)
       @progressbar.increment
     end
 
     @progressbar.increment
 
-    time = Benchmark.realtime do
+    # time = Benchmark.realtime do
       require 'roo'
       data = {}
+      data.store('key', @sheet_key)
       data.store('modified_date', @modified_date)
       xls = Roo::Spreadsheet.open(@tmp_filepath)
       # puts "== Parsing #{file} Spreadsheet ..."
@@ -138,7 +134,7 @@ class Drive
                 :symbolize_keys => true
               )
       end
-    end
+    # end
     @progressbar.finish
   end
 end
