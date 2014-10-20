@@ -35,20 +35,17 @@ module Middleman
           drive = ::Drive.new
           cache_file = ::File.join('data/cache', "#{locale}.json")
           time = Time.now
-          if offline || req.nil?
+          if !req.nil? && req.params['refresh'] || !req.nil? && req.GET.include?('refresh')
+            json = refresh(locale)
+            return page_data_request = json[page]
+          elsif !::File.exist?(cache_file) || ::File.mtime(cache_file) < (time - cache_duration)
+            json = refresh(locale)
+            return page_data_request = json[page]
+          else
             puts "== You are currently viewing #{page} using the offline mode".green if offline
             json = Oj.object_load(::File.read(cache_file))
             return page_data_request = json[page]
           end
-          if !req.nil? && req.params['refresh'] || !req.nil? && req.GET.include?('refresh')
-            json = refresh(locale)
-            return page_data_request = json[page]
-          end
-          if !::File.exist?(cache_file) || ::File.mtime(cache_file) < (time - cache_duration)
-            json = refresh(locale)
-            return page_data_request = json[page]
-          end
-          # end
         end
 
         def getItemByPosition(grid_position, page_data_request)
