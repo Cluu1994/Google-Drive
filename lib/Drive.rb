@@ -5,39 +5,37 @@ require 'multi_json'
 require 'rack'
 require 'oj'
 
-class ::Hash
-# add keys to hash
-  def to_obj
-    self.each do |k,v|
+# class ::Hash
+# # add keys to hash
+#   def to_obj
+#     self.each do |k,v|
 
-      v.to_obj if v.kind_of? Hash
-      v.to_obj if v.kind_of? Array
+#       v.to_obj if v.kind_of? Hash
+#       v.to_obj if v.kind_of? Array
 
-      k=k.gsub(/\.|\s|-|\/|\'/, '_').downcase.to_sym
+#       k=k.gsub(/\.|\s|-|\/|\'/, '_').downcase.to_sym
 
-      ## create and initialize an instance variable for this key/value pair
-      self.instance_variable_set("@#{k}", v)
+#       ## create and initialize an instance variable for this key/value pair
+#       self.instance_variable_set("@#{k}", v)
 
-      ## create the getter that returns the instance variable
-      self.class.send(:define_method, k, proc{self.instance_variable_get("@#{k}")})
+#       ## create the getter that returns the instance variable
+#       self.class.send(:define_method, k, proc{self.instance_variable_get("@#{k}")})
 
-      ## create the setter that sets the instance variable
-      self.class.send(:define_method, "#{k}=", proc{|v| self.instance_variable_set("@#{k}", v)})
-    end
-    return self
-  end
-end
+#       ## create the setter that sets the instance variable
+#       self.class.send(:define_method, "#{k}=", proc{|v| self.instance_variable_set("@#{k}", v)})
+#     end
+#     return self
+#   end
+# end
 
-class ::Array
-  def to_obj
-    self.map { |v| v.to_obj }
-  end
-end
+# class ::Array
+#   def to_obj
+#     self.map { |v| v.to_obj }
+#   end
+# end
 
 class Drive
 
-  # API_VERSION = 'v2'
-  # CACHED_API_FILE = "drive-#{API_VERSION}.cache"
   CREDENTIAL_STORE_FILE = 'data/credentials.yml'
 
   def initialize
@@ -63,11 +61,9 @@ class Drive
     return @drive
   end
 
-  def convert_to_s(object)
-    if (object.is_a? Array) || (object.to_i == 0)
-      return object
-    else
-      return object.to_i.to_s
+  def stringify_array_values(object)
+    object.each do |hash, value|
+      hash.each { |k, v| hash[k] = v.to_s }
     end
   end
 
@@ -91,7 +87,6 @@ class Drive
       if File.exist?(cache_file)
         json = Oj.object_load(::File.read(cache_file))
         @json_date = json['modified_date']
-        # binding.pry
         puts "== You already have the latest revision of #{file}".green
         return json if @json_date == @modified_date
       end
@@ -130,34 +125,26 @@ class Drive
             end
           end
         else
-          # otherwise parse the sheet into a hash
           sheet.header_line = 2 # this is stupid. theres a bug in Roo.
-          # puts sheet
-          data[title] = sheet.parse(headers: true)
+          begin
+            data[title] = stringify_array_values(sheet.parse(headers: true))
+          rescue NoMethodError => err
+          end
           @progressbar.increment
         end
       end
 
       data
-      # @worksheets = data
-      # data.each do |k, v|
-      # puts '== Converting to JSON'
+
       FileUtils.mkdir 'data/cache' unless File.directory?('data/cache')
       ::File.open(cache_file, 'w') do |f|
-          # f << MultiJson.dump(
-          #   {'modified_date' => @modified_date},
-          #   :pretty => true, :symbolize_keys => true
-          # )
           f << MultiJson.dump(
-                data, :pretty => true, :symbolize_keys => true
-              ).gsub('null', '""')
-
+                data,
+                :pretty => true,
+                :symbolize_keys => true
+              )
       end
-
     end
     @progressbar.finish
-    # puts "Time elapsed for parsing and converting: #{time} seconds"
   end
-
-
 end
