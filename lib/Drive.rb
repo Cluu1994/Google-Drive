@@ -5,35 +5,6 @@ require 'multi_json'
 require 'rack'
 require 'oj'
 
-# class ::Hash
-# # add keys to hash
-#   def to_obj
-#     self.each do |k,v|
-
-#       v.to_obj if v.kind_of? Hash
-#       v.to_obj if v.kind_of? Array
-
-#       k=k.gsub(/\.|\s|-|\/|\'/, '_').downcase.to_sym
-
-#       ## create and initialize an instance variable for this key/value pair
-#       self.instance_variable_set("@#{k}", v)
-
-#       ## create the getter that returns the instance variable
-#       self.class.send(:define_method, k, proc{self.instance_variable_get("@#{k}")})
-
-#       ## create the setter that sets the instance variable
-#       self.class.send(:define_method, "#{k}=", proc{|v| self.instance_variable_set("@#{k}", v)})
-#     end
-#     return self
-#   end
-# end
-
-# class ::Array
-#   def to_obj
-#     self.map { |v| v.to_obj }
-#   end
-# end
-
 class Drive
 
   CREDENTIAL_STORE_FILE = 'data/credentials.yml'
@@ -61,9 +32,32 @@ class Drive
     return @drive
   end
 
+  def numeric?(value)
+    Float(value) != nil rescue false
+  end
+
+  def trim(num)
+    i, f = num.to_i, num.to_f
+    i == f ? i : f
+  end
+
   def stringify_array_values(object)
     object.each do |hash, value|
-      hash.each { |k, v| hash[k] = v.to_s }
+      hash.each do |k, v|
+        # binding.pry
+        if numeric?(hash[k])
+            hash[k] = trim(v).to_s
+        else
+          hash[k] = v.to_s
+        end
+      end
+        # if v.is_numeric?
+        #   binding.pry
+
+        # else
+
+        # end
+      # end
     end
   end
 

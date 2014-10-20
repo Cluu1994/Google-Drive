@@ -23,7 +23,7 @@ module Middleman
     def after_configuration
       app.helpers do
 
-        def refresh(locale, opt={})
+        def refresh(locale)
           drive = ::Drive.new
           cache_file = ::File.join('data/cache', "#{locale}.json")
           drive.get_sheet(config.banner, config.season, config.campaign, locale)
