@@ -1,5 +1,5 @@
 require 'fileutils'
-require 'benchmark'
+# require 'benchmark'
 require 'ruby-progressbar'
 require 'multi_json'
 require 'rack'
