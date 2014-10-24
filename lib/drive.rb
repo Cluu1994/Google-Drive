@@ -1,5 +1,4 @@
 require 'fileutils'
-# require 'benchmark'
 require 'ruby-progressbar'
 require 'multi_json'
 require 'rack'
@@ -63,9 +62,8 @@ class Drive
                     :throttle_rate => 0.1)
     @progressbar.title = "== Loading #{file}"
     @progressbar.start
-    time = Benchmark.realtime do
+    # time = Benchmark.realtime do
       @tmp_filepath = File.join('tmp/', file + '.xlsx')
-
       if File.exist?(cache_file)
         json = Oj.object_load(::File.read(cache_file))
         @sheet_key = json['key']
@@ -83,17 +81,15 @@ class Drive
         @drive.file_by_id(@sheet_key).export_as_file(@tmp_filepath)
       end
       @progressbar.increment
-    end
+    # end
 
     @progressbar.increment
 
-    # time = Benchmark.realtime do
       require 'roo'
       data = {}
       data.store('key', @sheet_key)
       data.store('modified_date', @modified_date)
       xls = Roo::Spreadsheet.open(@tmp_filepath)
-      # puts "== Parsing #{file} Spreadsheet ..."
       xls.each_with_pagename do |title, sheet|
         @progressbar.increment
         # if the sheet is called microcopy, copy or ends with copy, we assume
@@ -134,7 +130,6 @@ class Drive
                 :symbolize_keys => true
               )
       end
-    # end
     @progressbar.finish
   end
 end
