@@ -55,19 +55,16 @@ class Drive
   def get_sheet(banner, season, campaign, file)
     cache_file = ::File.join('data/cache', "#{file}.json")
 
-    FileUtils.mkdir 'tmp' unless File.directory?('tmp')
     @progressbar = ProgressBar.create(:format => '%t | %a |%bᗧ%i| %p%%',
                     :progress_mark  => ' ',
                     :remainder_mark => '･',
                     :throttle_rate => 0.1)
     @progressbar.title = "== Loading #{file}"
     @progressbar.start
-    # time = Benchmark.realtime do
 
       @tmp_file = Tempfile.new(['gdoc', '.xlsx'], binmode: true)
       @tmp_filepath = @tmp_file.path
 
-      # @tmp_filepath = File.join('tmp/', file + '.xlsx')
       if File.exist?(cache_file)
         json = Oj.object_load(::File.read(cache_file))
         @sheet_key = json['key']
@@ -82,14 +79,11 @@ class Drive
           get_resp = @drive.execute!(uri: uri)
           @tmp_file.write get_resp.body
           @tmp_file.close
-          # @drive.file_by_id(@sheet_key).export_as_file(@tmp_filepath)
         end
       else
 
         @sheet_key = @drive.file_by_title([banner, season, campaign, file]).key
         @modified_date = @drive.file_by_id(@sheet_key).modified_date.to_s
-        #binding.pry
-        # @drive.file_by_id(@sheet_key).export_as_file(@tmp_filepath)
         uri =  @drive.file_by_id(@sheet_key).api_file['exportLinks'][
           'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet']
         get_resp = @drive.execute!(uri: uri)
@@ -97,7 +91,6 @@ class Drive
         @tmp_file.close
       end
       @progressbar.increment
-    # end
 
     @progressbar.increment
 

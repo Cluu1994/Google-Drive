@@ -23,7 +23,7 @@ Gem::Specification.new do |s|
 
   # Additional dependencies
   s.add_runtime_dependency("oauth2", [">= 1.0.0"])
-  # s.add_runtime_dependency("google_drive", [">= 0.3.10"])
+  s.add_runtime_dependency("google_drive", ["1.0.0.pre1"])
   s.add_runtime_dependency('ruby-progressbar', ">= 1.6.0")
   s.add_runtime_dependency('multi_json', [">= 1.10.1"])
   s.add_runtime_dependency("oj", [">= 2.10.3"])
