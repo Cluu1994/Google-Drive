@@ -53,92 +53,93 @@ class Drive
   end
 
   def get_sheet(banner, season, campaign, file)
-    cache_file = ::File.join('data/cache', "#{file}.json")
 
-    @progressbar = ProgressBar.create(:format => '%t | %a |%bᗧ%i| %p%%',
-                    :progress_mark  => ' ',
-                    :remainder_mark => '･',
-                    :throttle_rate => 0.1)
-    @progressbar.title = "== Loading #{file}"
-    @progressbar.start
+      cache_file = ::File.join('data/cache', "#{file}.json")
 
-      @tmp_file = Tempfile.new(['gdoc', '.xlsx'], binmode: true)
-      @tmp_filepath = @tmp_file.path
+      @progressbar = ProgressBar.create(:format => '%t | %a |%bᗧ%i| %p%%',
+                      :progress_mark  => ' ',
+                      :remainder_mark => '･',
+                      :throttle_rate => 0.1)
+      @progressbar.title = "== Loading #{file}"
+      @progressbar.start
 
-      if File.exist?(cache_file)
-        json = Oj.object_load(::File.read(cache_file))
-        @sheet_key = json['key']
-        @modified_date = @drive.file_by_id(@sheet_key).modified_date.to_s
-        @json_date = json['modified_date']
-        if @json_date == @modified_date
-          puts "== You already have the latest revision of #{file}".green
-          return json
+        @tmp_file = Tempfile.new(['gdoc', '.xlsx'], binmode: true)
+        @tmp_filepath = @tmp_file.path
+
+        if File.exist?(cache_file) && ENV['STAGING'].nil?
+          json = Oj.object_load(::File.read(cache_file))
+          @sheet_key = json['key']
+          @modified_date = DateTime.parse(@drive.file_by_id(@sheet_key).modified_date.to_s).to_time
+          @json_date = DateTime.parse(json['modified_date']).to_time
+          # binding.pry
+          if @json_date == @modified_date
+            puts "== You already have the latest revision of #{file}".green
+            return json
+          else
+            uri =  @drive.file_by_id(@sheet_key).api_file['exportLinks'][
+              'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet']
+            get_resp = @drive.execute!(uri: uri)
+            @tmp_file.write get_resp.body
+            @tmp_file.close
+          end
         else
+          @sheet_key = @drive.file_by_title([banner, season, campaign, file]).key
+          @modified_date = @drive.file_by_id(@sheet_key).modified_date.to_s
           uri =  @drive.file_by_id(@sheet_key).api_file['exportLinks'][
             'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet']
           get_resp = @drive.execute!(uri: uri)
           @tmp_file.write get_resp.body
           @tmp_file.close
         end
-      else
+        @progressbar.increment
 
-        @sheet_key = @drive.file_by_title([banner, season, campaign, file]).key
-        @modified_date = @drive.file_by_id(@sheet_key).modified_date.to_s
-        uri =  @drive.file_by_id(@sheet_key).api_file['exportLinks'][
-          'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet']
-        get_resp = @drive.execute!(uri: uri)
-        @tmp_file.write get_resp.body
-        @tmp_file.close
-      end
       @progressbar.increment
 
-    @progressbar.increment
-
-      require 'roo'
-      data = {}
-      data.store('key', @sheet_key)
-      data.store('modified_date', @modified_date)
-      xls = Roo::Spreadsheet.open(@tmp_filepath)
-      xls.each_with_pagename do |title, sheet|
-        @progressbar.increment
-        # if the sheet is called microcopy, copy or ends with copy, we assume
-        # the first column contains keys and the second contains values.
-        # Like tarbell.
-        if %w(microcopy copy).include?(title.downcase) ||
-          title.downcase =~ /[ -_]copy$/
-          data[title] = {}
-          sheet.each do |row|
-            # if the key name is reused, create an array with all the entries
-            if data[title].keys.include? row[0]
-              if data[title][row[0]].is_a? Array
-                data[title][row[0]] << row[1]
-              else
-                data[title][row[0]] = [data[title][row[0]], row[1]]
-              end
-            else
-              data[title][row[0]] = row[1].gsub(/[^0-9]/,'')
-            end
-          end
-        else
-          sheet.header_line = 2 # this is stupid. theres a bug in Roo.
-          begin
-            data[title] = stringify_array_values(sheet.parse(headers: true))
-          rescue NoMethodError => err
-          end
+        require 'roo'
+        data = {}
+        data.store('key', @sheet_key)
+        data.store('modified_date', @modified_date)
+        xls = Roo::Spreadsheet.open(@tmp_filepath)
+        xls.each_with_pagename do |title, sheet|
           @progressbar.increment
+          # if the sheet is called microcopy, copy or ends with copy, we assume
+          # the first column contains keys and the second contains values.
+          # Like tarbell.
+          if %w(microcopy copy).include?(title.downcase) ||
+            title.downcase =~ /[ -_]copy$/
+            data[title] = {}
+            sheet.each do |row|
+              # if the key name is reused, create an array with all the entries
+              if data[title].keys.include? row[0]
+                if data[title][row[0]].is_a? Array
+                  data[title][row[0]] << row[1]
+                else
+                  data[title][row[0]] = [data[title][row[0]], row[1]]
+                end
+              else
+                data[title][row[0]] = row[1].gsub(/[^0-9]/,'')
+              end
+            end
+          else
+            sheet.header_line = 2 # this is stupid. theres a bug in Roo.
+            begin
+              data[title] = stringify_array_values(sheet.parse(headers: true))
+            rescue NoMethodError => err
+            end
+            @progressbar.increment
+          end
         end
-      end
 
-      data
+        data
 
-      FileUtils.mkdir 'data/cache' unless File.directory?('data/cache')
-      ::File.open(cache_file, 'w') do |f|
-          f << MultiJson.dump(
-                data,
-                :pretty => true,
-                :symbolize_keys => true
-              )
-      end
-    @progressbar.finish
+        FileUtils.mkdir 'data/cache' unless File.directory?('data/cache')
+        ::File.open(cache_file, 'w') do |f|
+            f << MultiJson.dump(
+                  data,
+                  :pretty => true,
+                  :symbolize_keys => true
+                )
+        end
+      @progressbar.finish
   end
 end

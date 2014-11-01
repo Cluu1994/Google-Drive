@@ -14,8 +14,11 @@ module Middleman
       app = klass.inst # where would you store the app instance?
       app.logger.info '== Google Drive Loaded'
       options.load_sheets.each do |k, v|
-        app.data.store(k, drive.get_sheet(app.config.banner, app.config.season, app.config.campaign, v)) unless app.offline
+        # Thread.new do
+          app.data.store(k, drive.get_sheet(app.config.banner, app.config.season, app.config.campaign, v)) unless app.offline
+        # end
       end
+
     end
 
     def after_configuration
@@ -23,10 +26,12 @@ module Middleman
 
         def refresh(locale)
           drive = ::Drive.new
-          cache_file = ::File.join('data/cache', "#{locale}.json")
-          drive.get_sheet(config.banner, config.season, config.campaign, locale)
-          refreshed_json = Oj.object_load(::File.read(cache_file))
-          return refreshed_json
+          Thread.new do
+            cache_file = ::File.join('data/cache', "#{locale}.json")
+            drive.get_sheet(config.banner, config.season, config.campaign, locale)
+            refreshed_json = Oj.object_load(::File.read(cache_file))
+            return refreshed_json
+          end
         end
 
         def gdrive(locale, page)
@@ -39,11 +44,14 @@ module Middleman
             return page_data_request = json[page]
           end
 
-          if !::File.exist?(cache_file) || ::File.mtime(cache_file) < (time - cache_duration)
+          if !::File.exist?(cache_file) || ::File.mtime(cache_file) < (time - cache_duration) || ENV['STAGING'] == 'heroku'
             json = refresh(locale)
             return page_data_request = json[page]
           else
-            puts "== You are currently viewing #{page} using the offline mode".green if offline
+            unless build?
+              puts "== You are currently viewing #{page} using the offline mode".green if offline
+            end
+
             json = Oj.object_load(::File.read(cache_file))
             return page_data_request = json[page]
           end
