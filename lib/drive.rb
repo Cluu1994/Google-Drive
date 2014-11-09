@@ -130,7 +130,7 @@ class Drive
           end
         end
 
-        data
+        # data
 
         FileUtils.mkdir 'data/cache' unless File.directory?('data/cache')
         ::File.open(cache_file, 'w') do |f|

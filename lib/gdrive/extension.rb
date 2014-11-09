@@ -14,9 +14,7 @@ module Middleman
       app = klass.inst # where would you store the app instance?
       app.logger.info '== Google Drive Loaded'
       options.load_sheets.each do |k, v|
-        # Thread.new do
-          app.data.store(k, drive.get_sheet(app.config.banner, app.config.season, app.config.campaign, v)) unless app.offline
-        # end
+        app.data.store(k, drive.get_sheet(app.config.banner, app.config.season, app.config.campaign, v)) unless app.offline
       end
 
     end
@@ -26,16 +24,13 @@ module Middleman
 
         def refresh(locale)
           drive = ::Drive.new
-          Thread.new do
-            cache_file = ::File.join('data/cache', "#{locale}.json")
-            drive.get_sheet(config.banner, config.season, config.campaign, locale)
-            refreshed_json = Oj.object_load(::File.read(cache_file))
-            return refreshed_json
-          end
+          cache_file = ::File.join('data/cache', "#{locale}.json")
+          drive.get_sheet(config.banner, config.season, config.campaign, locale)
+          refreshed_json = Oj.object_load(::File.read(cache_file))
+          return refreshed_json
         end
 
         def gdrive(locale, page)
-          drive = ::Drive.new
           cache_file = ::File.join('data/cache', "#{locale}.json")
           time = Time.now
 
