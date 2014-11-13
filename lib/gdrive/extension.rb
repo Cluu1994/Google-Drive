@@ -30,7 +30,12 @@ module Middleman
           return refreshed_json
         end
 
-        def gdrive(locale, page)
+        def gdrive(locale, page, options={})
+          if options[:refresh => true]
+            json = refresh(locale)
+            return page_data_request = json[page]
+          end
+          
           cache_file = ::File.join('data/cache', "#{locale}.json")
           time = Time.now
 

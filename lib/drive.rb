@@ -68,10 +68,10 @@ class Drive
 
         if File.exist?(cache_file) && ENV['STAGING'].nil?
           json = Oj.object_load(::File.read(cache_file))
-          @sheet_key = json['key']
+          @sheet_key = json['key'] || ''
           @modified_date = DateTime.parse(@drive.file_by_id(@sheet_key).modified_date.to_s).to_time
           @json_date = DateTime.parse(json['modified_date']).to_time
-          # binding.pry
+
           if @json_date == @modified_date
             puts "== You already have the latest revision of #{file}".green
             return json
