@@ -1,5 +1,5 @@
 module Middleman
   module GDrive
-    VERSION = '0.1.5.beta.10'
+    VERSION = '0.1.5.beta.11'
   end
 end
