@@ -39,14 +39,14 @@ module Middleman
         cache_file = ::File.join('data/cache', "#{locale}_#{page}.json")
         time = Time.now
         if offline
-          puts "== You are currently viewing #{page} using the offline mode".green
+          puts "== You are currently viewing #{page} using the offline mode"
           return page_data_request = Oj.load(::File.read(cache_file))
         end
         if !req.nil? && req.params['nocache'] || !req.nil? && req.GET.include?('nocache')
-          puts "== You are viewing #{page} directly from google drive".red
+          puts "== You are viewing #{page} directly from google drive"
           return page_data_request = Oj.load(session.file_by_title(locale).worksheet_by_title(page).list.to_hash_array.to_json)
         elsif !req.nil? && req.params['refresh'] || !req.nil? && req.GET.include?('refresh')
-          puts "== Refreshing cache file for #{page}".green
+          puts "== Refreshing cache file for #{page}"
           result = session.file_by_title(locale).worksheet_by_title(page).list.to_hash_array.to_json
           ::File.open(cache_file, 'w')  { |f| f << result }
           return page_data_request = Oj.load(::File.read(cache_file))
