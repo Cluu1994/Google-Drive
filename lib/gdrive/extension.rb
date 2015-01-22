@@ -39,7 +39,7 @@ module Middleman
         cache_file = ::File.join('data/cache', "#{locale}_#{page}.json")
         time = Time.now
         if offline
-          puts "== You are currently viewing #{page} using the offline mode" unless app.build?
+          puts "== You are currently viewing #{page} using the offline mode" unless build?
           return page_data_request = Oj.load(::File.read(cache_file))
         end
         if !req.nil? && req.params['nocache'] || !req.nil? && req.GET.include?('nocache')
