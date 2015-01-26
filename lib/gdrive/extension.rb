@@ -49,7 +49,7 @@ module Middleman
             return page_data_request = json[page]
           else
             unless build?
-              puts "== You are currently viewing #{page} using the offline mode".green if offline
+              puts "== You are currently viewing #{page} using the offline mode" if offline
             end
 
             json = Oj.object_load(::File.read(cache_file))
