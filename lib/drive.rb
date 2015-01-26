@@ -73,7 +73,7 @@ class Drive
           @json_date = DateTime.parse(json['modified_date']).to_time
 
           if @json_date == @modified_date
-            puts "== You already have the latest revision of #{file}".green
+            puts "== You already have the latest revision of #{file}"
             return json
           else
             uri =  @drive.file_by_id(@sheet_key).api_file['exportLinks'][
