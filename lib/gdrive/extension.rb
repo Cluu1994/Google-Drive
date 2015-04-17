@@ -108,7 +108,6 @@ module Middleman
           page = page.lstrip.rstrip
           cache_file = ::File.join('data/cache', "#{locale}_#{page}.json")
           time = Time.now
-          session = session.subcollection_by_title(season).subcollection_by_title(campaign)
           if offline
             puts "== You are currently viewing #{page} using the offline mode" unless build?
             return page_data_request = Oj.load(::File.read(cache_file))
