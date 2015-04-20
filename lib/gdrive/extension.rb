@@ -18,7 +18,8 @@ module Middleman
       app.logger.info '== Google Drive Loaded'
 
       app.helpers do
-        def session
+
+        def auth
           # Create Google Authentication Session with Access Token
           settings = YAML.load(File.open('data/credentials.yml'))
           client = OAuth2::Client.new(
@@ -29,13 +30,12 @@ module Middleman
           )
           auth_token = OAuth2::AccessToken.from_hash( client, { refresh_token: settings['google']['refresh_token'] })
           auth_token = auth_token.refresh!
-          gdauth = GoogleDrive.login_with_oauth(auth_token)
-          return session = gdauth.collection_by_title(banner).subcollection_by_title(season).subcollection_by_title(campaign)
+          return GoogleDrive.login_with_oauth(auth_token)
         end
 
         def split_path(path)
           array = []
-          until ['/', '.'].include? path
+          until %w(/ .).include? path
             array << File.basename(path)
             path = File.dirname(path)
           end
@@ -47,60 +47,65 @@ module Middleman
         end
 
         def getSheet(path, filename, worksheet)
-          # Create Google Authentication Session with Access Token
-          settings = YAML.load(File.open('data/credentials.yml'))
-          client = OAuth2::Client.new(
-              settings['google']['client_id'], settings['google']['client_secret'],
-              site: 'https://accounts.google.com',
-              token_url: '/o/oauth2/token',
-              authorize_url: '/o/oauth2/auth'
-          )
-          auth_token = OAuth2::AccessToken.from_hash( client, { refresh_token: settings['google']['refresh_token'] })
-          auth_token = auth_token.refresh!
-          auth = GoogleDrive.login_with_oauth(auth_token)
           paths = split_path path
           spreadsheet = filename.lstrip.rstrip
           worksheet = worksheet.lstrip.rstrip
           @banner_root = auth.collection_by_title(banner)
           cache_file = ::File.join('data/cache', "#{spreadsheet}_#{worksheet}.json")
-          time = Time.now
+          # time = Time.now
           paths.each do |spreadsheet_path|
             if @dir.nil?
-              # puts spreadsheet_path
               @dir = fetch_path(@banner_root, spreadsheet_path)
             else
-              # puts spreadsheet_path
               @dir = fetch_path(@dir, spreadsheet_path)
             end
-            # puts @dir
           end
 
-          destination_path = @dir
-          # return Oj.load(@dir.file_by_title(spreadsheet).worksheet_by_title(worksheet).list.to_hash_array.to_json)
+          (@dir.nil?) ? destination_path = @destination_path : @destination_path = @dir
 
-          # session = session.subcollection_by_title(season).subcollection_by_title(campaign)
           if offline
             puts "== You are currently viewing #{page} using the offline mode" unless build?
-            return page_data_request = Oj.load(::File.read(cache_file))
+            offline_load(page, cache_file)
           end
           if !req.nil? && req.params['nocache'] || !req.nil? && req.GET.include?('nocache')
             puts "== You are viewing #{page} directly from google drive"
-            return page_data_request =  Oj.load(destination_path.file_by_title(spreadsheet).worksheet_by_title(worksheet).list.to_hash_array.to_json)
+            nocache_load(destination_path, spreadsheet, worksheet)
           elsif !req.nil? && req.params['refresh'] || !req.nil? && req.GET.include?('refresh')
             puts "== Refreshing cache file for #{page}"
-            result = destination_path.file_by_title(spreadsheet).worksheet_by_title(worksheet).list.to_hash_array.to_json
-            ::File.open(cache_file, 'w')  { |f| f << result }
-            return page_data_request = Oj.load(::File.read(cache_file))
+            refresh_cache(destination_path, spreadsheet, worksheet, cache_file)
           else
-            if !::File.exist?(cache_file) || ::File.mtime(cache_file) < (time - cache_duration)
-              puts spreadsheet
-              puts worksheet
-              puts @dir
-              result = destination_path.file_by_title(spreadsheet).worksheet_by_title(worksheet).list.to_hash_array.to_json
-              ::File.open(cache_file, 'w')  { |f| f << result }
-            end
+            refresh_cache(destination_path, spreadsheet, worksheet, cache_file) if outdated_cache_file(cache_file)
             return page_data_request = Oj.load(::File.read(cache_file))
           end
+        end
+
+        def outdated_cache_file(file)
+          time = Time.now
+          !::File.exist?(file) || ::File.mtime(file) < (time - cache_duration)
+        end
+
+        def offline_load(page, cache_file)
+          return page_data_request = Oj.load(::File.read(cache_file))
+        end
+
+        def nocache_load(root, spreadsheet, worksheet)
+          return page_data_request =  Oj.load(root.file_by_title(spreadsheet).worksheet_by_title(worksheet).list.to_hash_array.to_json)
+        end
+
+        def refresh_cache(root, spreadsheet, worksheet, cache_file)
+          begin
+            result = root.file_by_title(spreadsheet).worksheet_by_title(worksheet).list.to_hash_array.to_json
+          rescue
+            # binding.pry
+            logger.warn("Using #{@destination_path} as root for the spreadsheet.")
+            result = @destination_path.file_by_title(spreadsheet).worksheet_by_title(worksheet).list.to_hash_array.to_json
+          end
+          ::File.open(cache_file, 'w')  { |f| f << result }
+          return page_data_request = Oj.load(::File.read(cache_file))
+        end
+
+        def session
+          return auth.collection_by_title(banner).subcollection_by_title(season).subcollection_by_title(campaign)
         end
 
         def gdrive(locale, page)
