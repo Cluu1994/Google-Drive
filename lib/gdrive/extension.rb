@@ -96,8 +96,7 @@ module Middleman
           begin
             result = root.file_by_title(spreadsheet).worksheet_by_title(worksheet).list.to_hash_array.to_json
           rescue
-            # binding.pry
-            logger.warn("Using #{@destination_path} as root for the spreadsheet.")
+            # logger.warn("Using #{@destination_path} as root for the spreadsheet.")
             result = @destination_path.file_by_title(spreadsheet).worksheet_by_title(worksheet).list.to_hash_array.to_json
           end
           ::File.open(cache_file, 'w')  { |f| f << result }

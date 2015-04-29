@@ -1,5 +1,5 @@
 module Middleman
   module GDrive
-    VERSION = '0.1.3'
+    VERSION = '1.1-EPR'
   end
 end
