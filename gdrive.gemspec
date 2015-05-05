@@ -8,7 +8,7 @@ Gem::Specification.new do |s|
   s.platform    = Gem::Platform::RUBY
   s.authors     = ["ALDO Digital Lab"]
   # s.email       = ["email@example.com"]
-  s.homepage    = "http://github.com/aldogroup/Google-Drive"
+  # s.homepage    = "http://example.com"
   s.summary     = %q{Google Drive for Aldo Group}
   # s.description = %q{A longer description of your extension}
 
@@ -18,12 +18,11 @@ Gem::Specification.new do |s|
   s.require_paths = ["lib"]
 
   # The version of middleman-core your extension depends on
-  s.add_dependency("middleman-core", [">= 3.2.2"])
+  s.add_runtime_dependency("middleman-core", [">= 3.2.2"])
 
   # Additional dependencies
-  s.add_dependency "rack"
-  s.add_dependency 'multipart-post', '>= 1.2', '< 3'
-  s.add_dependency("oauth2", [">= 0.5.0"])
-  s.add_dependency("google_drive", [">= 0.3.8"])
+  s.add_runtime_dependency("oauth2", [">= 1.0.0"])
+  s.add_runtime_dependency("google_drive", [">= 0.3.10"])
+  s.add_runtime_dependency("oj", [">= 2.10.3"])
   # s.add_runtime_dependency("gem-name", "gem-version")
 end
