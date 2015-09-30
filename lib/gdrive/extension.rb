@@ -1,6 +1,6 @@
 require 'fileutils'
 require 'oj'
-require 'pry'
+
 module Middleman
   class GDriveExtension < ::Middleman::Extension
     #include Middleman::CoreExtensions
