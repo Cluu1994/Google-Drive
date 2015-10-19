@@ -2,29 +2,32 @@ require 'fileutils'
 require 'multi_json'
 require 'oj'
 require 'drive'
-require 'pry'
+# require 'rack/util'
+# require 'pry'
 module Middleman
-  class GDriveExtension < ::Middleman::Extension
-    option :load_sheets, {}, 'Hash of google spreadsheets to load. Hash value is the id or slug of the entry to load, hash key is the data attribute to load the sheet data into.'
+  module Gdrive
+    @config
+    class Extension < ::Middleman::Extension
+      option :load_sheets, nil, 'Hash of google spreadsheets to load. Hash value is the id or slug of the entry to load, hash key is the data attribute to load the sheet data into.'
 
-    def initialize(klass, options_hash = {}, &block)
-      # Call super to build options from the options_hash
-      super
+      def run_once(options_hash = {}, &block)
 
-      drive = ::Drive.new
-      app = klass.inst # where would you store the app instance?
-      app.logger.info '== Google Drive Loaded'
-      if options.load_sheets.nil?
-        options.load_sheets = {en_CA: 'ca_en', fr_CA: 'ca_fr'}
+        drive = ::Drive.new
+        logger.info '== Google Drive Loaded'
+
+        if options.load_sheets.nil?
+          options.load_sheets = {en_CA: 'ca_en', fr_CA: 'ca_fr'}
+        end
+
+        options.load_sheets.each do |k, v|
+          app.data.store(k, drive.get_sheet(app.config.banner, app.config.season, app.config.campaign, v)) unless app.config.offline
+        end
+
       end
-      options.load_sheets.each do |k, v|
-        app.data.store(k, drive.get_sheet(app.config.banner, app.config.season, app.config.campaign, v)) unless app.offline
-      end
 
-    end
+      helpers do
 
-    def after_configuration
-      app.helpers do
+
 
         def refresh(locale)
           drive = ::Drive.new
@@ -52,7 +55,11 @@ module Middleman
           paths = split_path path
           spreadsheet = filename.lstrip.rstrip
           worksheet = worksheet.lstrip.rstrip
-
+          begin
+            req = rack[:request].query_string
+          rescue
+            req = nil
+          end
           begin
             @banner_root = auth.collection_by_title(banner)
           rescue
@@ -112,11 +119,16 @@ module Middleman
         end
 
         def gdrive(locale, page, options={})
+          puts locale
           if options[:refresh => true]
             json = refresh(locale)
             return page_data_request = json[page]
           end
-          
+          begin
+            req = rack[:request].query_string
+          rescue
+            req = nil
+          end
           cache_file = ::File.join('data/cache', "#{locale}.json")
           time = Time.now
 
@@ -125,7 +137,7 @@ module Middleman
             return page_data_request = json[page]
           end
 
-          if !::File.exist?(cache_file) || ::File.mtime(cache_file) < (time - cache_duration) || ENV['STAGING'] == 'heroku'
+          if !::File.exist?(cache_file) || ::File.mtime(cache_file) < (time - app.config.cache_duration) || ENV['STAGING'] == 'heroku'
             json = refresh(locale)
             return page_data_request = json[page]
           else
@@ -189,6 +201,10 @@ module Middleman
         def getAllData(data_type, data_name, page_data)
           return page_data.find_all { |k| k["#{data_type}"].match /#{data_name}(.*)/ }
         end
+      end
+
+      def ready
+        run_once
       end
     end
   end

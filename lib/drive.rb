@@ -145,15 +145,21 @@ class Drive
           # if the sheet is called microcopy, copy or ends with copy, we assume
           # the first column contains keys and the second contains values.
           # Like tarbell.
-          if %w(microcopy copy).include?(title.downcase) ||
-              title.downcase =~ /[ -_]copy$/
-            data[title] = load_microcopy(sheet.extract_data)
-          else
-            # otherwise parse the sheet into a hash
-            data[title] = load_table(sheet.extract_data)
-            # puts "Rows in #{title}: #{data[title].length}"
-            @progressbar.increment
+          begin
+            if %w(microcopy copy).include?(title.downcase) ||
+                title.downcase =~ /[ -_]copy$/
+              data[title] = load_microcopy(sheet.extract_data)
+            else
+              # otherwise parse the sheet into a hash
+              data[title] = load_table(sheet.extract_data)
+              # puts "Rows in #{title}: #{data[title].length}"
+              @progressbar.increment
+            end
+          rescue
+            puts 'Aborting due to an error.'
+
           end
+
         end
 
         # data
@@ -234,11 +240,16 @@ class Drive
     return [] if table.length < 2
     header = table.shift # Get the header row
     # remove blank rows
-    table.reject! { |row| row.nil? || row.map { |r| r.to_s }.reduce(:+).strip.empty? }
+    table.reject! do |row|
+      row.nil? || row
+         .map { |r| r.nil? || r.to_s.strip.empty? }
+         .reduce(true) { |m, col| m && col }
+    end
     table.map do |row|
       # zip headers with current row, convert it to a hash
       header.zip(row).to_h unless row.nil?
     end
+
   end
 
 
