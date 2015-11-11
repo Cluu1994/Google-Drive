@@ -30,7 +30,7 @@ Gem::Specification.new do |s|
   s.add_runtime_dependency("roo", ">= 1.13.2")
   s.add_runtime_dependency('retriable', '~> 1.4')
   # s.add_runtime_dependency('google-api-client', '< 0.8')
-  s.add_runtime_dependency('rubyXL', '~> 3.3')
+  s.add_runtime_dependency('rubyXL', '3.3')
   s.add_runtime_dependency('archieml', '~> 0.1')
   s.add_runtime_dependency('mime-types', '~> 2.4')
 end

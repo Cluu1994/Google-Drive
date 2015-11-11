@@ -23,6 +23,7 @@ class Drive
 
   end
 
+
   def do_auth
     client = OAuth2::Client.new(
         @settings['google']['client_id'], @settings['google']['client_secret'],
@@ -37,7 +38,7 @@ class Drive
     auth_token = auth_token.refresh!
     @drive = GoogleDrive.login_with_oauth(auth_token)
 
-    return @drive
+    @drive
   end
 
   def numeric?(value)
@@ -72,7 +73,7 @@ class Drive
       @progressbar.title = "== Loading #{file}"
       @progressbar.start
 
-        @tmp_file = Tempfile.new(['gdoc', '.xlsx'], binmode: true)
+        @tmp_file = Tempfile.new(%w(gdoc .xlsx), binmode: true)
         @tmp_filepath = @tmp_file.path
 
         if File.exist?(cache_file) && ENV['STAGING'].nil?
@@ -82,7 +83,7 @@ class Drive
           @json_date = DateTime.parse(json['modified_date']).to_time
 
           if @json_date == @modified_date
-            puts "== You already have the latest revision of #{file}"
+            logger.info "== You already have the latest revision of #{file}"
             return json
           else
             uri =  @drive.file_by_id(@sheet_key).api_file['exportLinks'][
@@ -94,6 +95,7 @@ class Drive
         else
           @sheet_key = @drive.file_by_title([banner, season, campaign, file]).key
           @modified_date = @drive.file_by_id(@sheet_key).modified_date.to_s
+
           uri =  @drive.file_by_id(@sheet_key).api_file['exportLinks'][
             'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet']
           get_resp = @drive.execute!(uri: uri)
@@ -104,43 +106,12 @@ class Drive
 
       @progressbar.increment
 
-        # require 'roo'
-        # data = {}
-
-        # xls = Roo::Spreadsheet.open(@tmp_filepath)
-        # xls.each_with_pagename do |title, sheet|
         xls = RubyXL::Parser.parse(@tmp_filepath)
         data = {}
         data.store('key', @sheet_key)
         data.store('modified_date', @modified_date)
         xls.worksheets.each do |sheet|
           @progressbar.increment
-          # if the sheet is called microcopy, copy or ends with copy, we assume
-          # the first column contains keys and the second contains values.
-          # Like tarbell.
-          # if %w(microcopy copy).include?(title.downcase) ||
-          #   title.downcase =~ /[ -_]copy$/
-          #   data[title] = {}
-          #   sheet.each do |row|
-          #     # if the key name is reused, create an array with all the entries
-          #     if data[title].keys.include? row[0]
-          #       if data[title][row[0]].is_a? Array
-          #         data[title][row[0]] << row[1]
-          #       else
-          #         data[title][row[0]] = [data[title][row[0]], row[1]]
-          #       end
-          #     else
-          #       data[title][row[0]] = row[1].gsub(/[^0-9]/,'')
-          #     end
-          #   end
-          # else
-          #   sheet.header_line = 2 # this is stupid. theres a bug in Roo.
-          #   begin
-          #     data[title] = stringify_array_values(sheet.parse(headers: true))
-          #   rescue NoMethodError => err
-          #   end
-          #   @progressbar.increment
-          # end
           title = sheet.sheet_name
           # if the sheet is called microcopy, copy or ends with copy, we assume
           # the first column contains keys and the second contains values.
@@ -151,7 +122,6 @@ class Drive
           else
             # otherwise parse the sheet into a hash
             data[title] = load_table(sheet.extract_data)
-            # puts "Rows in #{title}: #{data[title].length}"
             @progressbar.increment
           end
         end
@@ -169,34 +139,15 @@ class Drive
       @progressbar.finish
   end
 
+  private
+
+  def logger
+    ::Middleman::Logger.singleton( 1 )
+  end
+
+
 
   ## Spreadsheet utilities
-
-  # Parse a spreadsheet
-  # Reduces the spreadsheet to a no-frills hash, suitable for serializing and passing around.
-  #
-  # @param filename [String] path to xls file
-  # @return [Hash] spreadsheet contents
-  # def prepare_spreadsheet(filename)
-  #   # open the file with RubyXL
-  #   xls = RubyXL::Parser.parse(filename)
-  #   data = {}
-  #   xls.worksheets.each do |sheet|
-  #     title = sheet.sheet_name
-  #     # if the sheet is called microcopy, copy or ends with copy, we assume
-  #     # the first column contains keys and the second contains values.
-  #     # Like tarbell.
-  #     if %w(microcopy copy).include?(title.downcase) ||
-  #         title.downcase =~ /[ -_]copy$/
-  #       data[title] = load_microcopy(sheet.extract_data)
-  #     else
-  #       # otherwise parse the sheet into a hash
-  #       data[title] = load_table(sheet.extract_data)
-  #       puts "Rows in #{title}: #{data[title].length}"
-  #     end
-  #   end
-  #   return data
-  # end
 
   # Take a two-dimensional array from a spreadsheet and create a hash. The first
   # column is used as the key, and the second column is the value. If the key
