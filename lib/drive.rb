@@ -66,14 +66,16 @@ class Drive
 
       cache_file = ::File.join('data/cache', "#{file}.json")
 
-      @progressbar = ProgressBar.create(:format => '%t | %a |%bᗧ%i| %p%%',
-                      :progress_mark  => ' ',
-                      :remainder_mark => '･',
-                      :throttle_rate => 0.1)
-      @progressbar.title = "== Loading #{file}"
-      @progressbar.start
+      # @progressbar = ProgressBar.create(:format => '%t | %a |%bᗧ%i| %p%%',
+      #                 :progress_mark  => ' ',
+      #                 :remainder_mark => '･',
+      #                 :throttle_rate => 0.1)
+      logger.debug "== Processing #{file}"
+      # @progressbar.title = "== Loading #{file}"
+      # @progressbar.start
 
-        @tmp_file = Tempfile.new(%w(gdoc .xlsx), binmode: true)
+        @tmp_file = Tempfile.create(
+            ['googledoc', '.xlsx'], binmode: true)
         @tmp_filepath = @tmp_file.path
 
         if File.exist?(cache_file) && ENV['STAGING'].nil?
@@ -83,7 +85,7 @@ class Drive
           @json_date = DateTime.parse(json['modified_date']).to_time
 
           if @json_date == @modified_date
-            logger.info "== You already have the latest revision of #{file}"
+            logger.debug "== You already have the latest revision of #{file}"
             return json
           else
             uri =  @drive.file_by_id(@sheet_key).api_file['exportLinks'][
@@ -102,16 +104,16 @@ class Drive
           @tmp_file.write get_resp.body
           @tmp_file.close
         end
-        @progressbar.increment
-
-      @progressbar.increment
+      #   @progressbar.increment
+      #
+      # @progressbar.increment
 
         xls = RubyXL::Parser.parse(@tmp_filepath)
         data = {}
         data.store('key', @sheet_key)
         data.store('modified_date', @modified_date)
         xls.worksheets.each do |sheet|
-          @progressbar.increment
+          # @progressbar.increment
           title = sheet.sheet_name
           # if the sheet is called microcopy, copy or ends with copy, we assume
           # the first column contains keys and the second contains values.
@@ -122,7 +124,7 @@ class Drive
           else
             # otherwise parse the sheet into a hash
             data[title] = load_table(sheet.extract_data)
-            @progressbar.increment
+            # @progressbar.increment
           end
         end
 
@@ -136,10 +138,14 @@ class Drive
                   :symbolize_keys => true
                 )
         end
-      @progressbar.finish
+      # @progressbar.finish
   end
 
   private
+
+  def mime_for(extension)
+    MIME::Types.of(extension.to_s).first
+  end
 
   def logger
     ::Middleman::Logger.singleton( 1 )
