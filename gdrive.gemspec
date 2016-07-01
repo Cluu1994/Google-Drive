@@ -22,7 +22,7 @@ Gem::Specification.new do |s|
 
   # Additional dependencies
   s.add_runtime_dependency("oauth2", [">= 1.0.0"])
-  s.add_runtime_dependency("google_drive", [">= 0.3.10"])
+  s.add_runtime_dependency("google_drive", ["~> 1.0.6", "< 2.0.0"])
   s.add_runtime_dependency("oj", [">= 2.10.3"])
   # s.add_runtime_dependency("gem-name", "gem-version")
 end
