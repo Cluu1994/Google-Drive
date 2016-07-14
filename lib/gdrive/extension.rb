@@ -188,6 +188,13 @@ module Middleman
           q = data.find_all {|k| k['id'] == id}
           return q[0]['value']
         end
+        
+        def get_all_from_id(id, copy, link)
+          q = copy.find_all {|k| k['id'] == id}
+          r = link.find_all {|k| k['id'] == id}
+          return q[0]['copy']
+          return r[0]['link']
+        end
       end
     end
   end
